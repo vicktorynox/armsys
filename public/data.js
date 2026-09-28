@@ -3,6 +3,7 @@ export const cloud=Boolean(config.supabaseUrl&&config.supabaseKey);
 let session=null;
 try{session=JSON.parse(sessionStorage.getItem('armsys-session')||'null');}catch{}
 export const currentUser=()=>session?.user;
+export const isSuperAdmin=()=>session?.user?.app_metadata?.role==='superadmin';
 export const isLoggedIn=()=>Boolean(session);
 const dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open('armsys-demo',1);r.onupgradeneeded=()=>{r.result.createObjectStore('docs',{keyPath:'id'});r.result.createObjectStore('models');};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
 async function db(store,mode,fn){const database=await dbPromise;return new Promise((resolve,reject)=>{const tx=database.transaction(store,mode);const req=fn(tx.objectStore(store));tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);});}
