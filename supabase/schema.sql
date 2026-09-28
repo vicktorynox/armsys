@@ -66,7 +66,7 @@ create policy "Clean own orphan uploads" on storage.objects for delete to authen
 using(bucket_id = 'documents' and (storage.foldername(name))[1] = (select auth.uid())::text and not exists(
 select 1 from public.documents d where d.original_path = name or d.signed_path = name));
 
-create or replace function public.complete_document(doc_id uuid,file_path text,position jsonb)
+create or replace function public.complete_document(doc_id uuid,file_path text,"position" jsonb)
 returns void language plpgsql security definer set search_path = '' as $$
 declare doc public.documents;
 begin
@@ -82,14 +82,14 @@ begin
   if not exists(select 1 from storage.objects where bucket_id='documents' and name=file_path) then
     raise exception 'Signed PDF has not been uploaded';
   end if;
-  if position is null or not (position ?& array['page','x','y','w','h']) or
-    (position->>'page')::int < 1 or (position->>'x')::float < 0 or (position->>'y')::float < 0 or
-    (position->>'w')::float <= 0 or (position->>'h')::float <= 0 or
-    (position->>'x')::float + (position->>'w')::float > 1.00001 or
-    (position->>'y')::float + (position->>'h')::float > 1.00001 then
+  if "position" is null or not ("position" ?& array['page','x','y','w','h']) or
+    ("position"->>'page')::int < 1 or ("position"->>'x')::float < 0 or ("position"->>'y')::float < 0 or
+    ("position"->>'w')::float <= 0 or ("position"->>'h')::float <= 0 or
+    ("position"->>'x')::float + ("position"->>'w')::float > 1.00001 or
+    ("position"->>'y')::float + ("position"->>'h')::float > 1.00001 then
     raise exception 'Invalid signature position';
   end if;
-  update public.documents set status='signed',signed_path=file_path,placement=position,
+  update public.documents set status='signed',signed_path=file_path,placement="position",
     signed_at=now(),signed_by=auth.uid() where id=doc_id;
   insert into public.document_events(document_id,actor_id,event) values(doc_id,auth.uid(),'signed');
 end $$;
